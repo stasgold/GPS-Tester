@@ -43,12 +43,12 @@ jobs:
       - name: Build and test
         run: |
           set -o pipefail
-          xcodebuild test \
+          # TEST_RUNNER_ variables reach the tests (without the prefix); ScreenSnapshots writes there.
+          TEST_RUNNER_SNAPSHOT_DIR="$RUNNER_TEMP/snapshots" xcodebuild test \
             -project GPSTest.xcodeproj \
             -scheme GPSTest \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             CODE_SIGNING_ALLOWED=NO \
-            TEST_RUNNER_SNAPSHOT_DIR="$RUNNER_TEMP/snapshots" \
             | tee xcodebuild.log | grep -E "error:|warning:|Test (Suite|Case)|✔|✘|passed|failed|\*\* (BUILD|TEST)" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
 
