@@ -72,6 +72,9 @@ jobs:
           sudo xcode-select -s "$XCODE"
           xcodebuild -version
 
+      - name: Remember the team's certificates
+        run: python3 ci/ci_certificates.py snapshot
+
       - name: Archive
         run: |
           set -o pipefail
@@ -112,6 +115,13 @@ jobs:
           path: |
             archive.log
             export.log
+
+      - name: Revoke certificates this run created
+        if: always()
+        run: |
+          # A fresh runner makes Xcode create a new certificate every time; clean up so the
+          # account never reaches Apple's certificate limit.
+          if [ -n "${ASC_KEY_PATH:-}" ] && [ -f "$ASC_KEY_PATH" ]; then python3 ci/ci_certificates.py revoke; fi
 
       - name: Remove API key
         if: always()
