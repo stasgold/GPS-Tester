@@ -29,11 +29,11 @@ struct LocationAccessBanner: View {
         switch location.authorization {
         case .notDetermined:
             banner("Location access needed",
-                   message: "GPS Test reads your position, speed and heading from the phone's GNSS receiver.",
+                   message: "GPS Checker reads your position, speed and heading from the phone's GNSS receiver.",
                    button: "Allow Location Access") { location.start() }
         case .denied, .restricted:
             banner("Location access is off",
-                   message: "Turn on Location Services for GPS Test in Settings to see fixes.",
+                   message: "Turn on Location Services for GPS Checker in Settings to see fixes.",
                    button: "Open Settings") { openSettings() }
         default:
             if !location.isPrecise {

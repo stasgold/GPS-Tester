@@ -40,7 +40,7 @@ struct SettingsView: View {
                     Text("Compass & display")
                 }
                 Section {
-                    Text("Apple does not give apps access to the list of satellites, their signal strength (SNR) or their sky positions, so the satellite bar chart and sky view from GPS Test on Android cannot exist on iOS. Everything iOS does expose is here: position, accuracy, altitude, speed, course, heading, time to first fix and fix rate.")
+                    Text("Apple does not give apps access to the list of satellites, their signal strength (SNR) or their sky positions, so no iOS app can show a satellite signal chart or sky view. Everything iOS does expose is here: position, accuracy, altitude, speed, course, heading, time to first fix and fix rate.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } header: {

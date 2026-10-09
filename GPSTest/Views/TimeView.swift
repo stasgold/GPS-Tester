@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Clocks plus sun and moon times for the current position, like GPS Test's Time screen.
+/// Clocks plus sun and moon times for the current position.
 struct TimeView: View {
     @Environment(LocationService.self) private var location
     @AppStorage(SettingsKey.units) private var units = UnitSystem.metric

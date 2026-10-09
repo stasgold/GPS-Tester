@@ -2,8 +2,8 @@ import Foundation
 
 /// Sun and moon positions, rise/set times and moon phase.
 ///
-/// A Swift port of Vladimir Agafonkin's SunCalc (BSD-2-Clause), the same low-precision
-/// formulas GPS Test's Time screen relies on. Accurate to about a minute for rise and set times.
+/// A Swift port of Vladimir Agafonkin's SunCalc (BSD-2-Clause) low-precision formulas.
+/// Accurate to about a minute for rise and set times.
 enum Astronomy {
     struct Position: Equatable {
         /// Degrees clockwise from true north, 0..<360.

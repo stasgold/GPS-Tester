@@ -10,7 +10,7 @@ struct AccuracySample: Identifiable, Equatable {
     var vertical: Double?
 }
 
-/// What the receiver is doing, the iOS stand-in for GPS Test's "3D fix / no fix" indicator.
+/// What the receiver is doing: no fix, 2D or 3D fix, or a fix that has gone stale.
 enum FixStatus: Equatable {
     case off, searching, fix2D, fix3D, stale
 

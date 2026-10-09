@@ -1,7 +1,6 @@
-# GPS Test for iOS
+# GPS Checker
 
-A native SwiftUI port of [GPS Test](https://play.google.com/store/apps/details?id=com.chartcross.gpstest) (Chartcross, Android):
-a GNSS diagnostics screen, map, compass, sun and moon times and waypoints..
+A native SwiftUI app for iPhone and iPad: a GNSS diagnostics screen, map, compass, sun and moon times and waypoints.
 
 ## Screens
 
@@ -29,9 +28,9 @@ a GNSS diagnostics screen, map, compass, sun and moon times and waypoints..
 ### What iOS cannot do
 
 Apple gives apps no access to individual satellites: there is no list of satellites, constellation, signal-to-noise
-ratio, elevation/azimuth, "used in fix" flags or raw GNSS measurements. GPS Test's satellite bar chart and sky view
-therefore cannot be ported. In their place the Status screen charts the receiver's accuracy estimate over time.
-The Android app's "clear AGPS data" has no iOS equivalent either; **Restart** is the closest thing.
+ratio, elevation/azimuth, "used in fix" flags or raw GNSS measurements. A satellite signal chart or sky view is
+therefore impossible on iOS. In their place the Status screen charts the receiver's accuracy estimate over time.
+There is no way to clear assisted-GPS data either; **Restart** is the closest thing.
 
 ## Building
 

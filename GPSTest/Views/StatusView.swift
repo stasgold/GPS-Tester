@@ -2,7 +2,7 @@ import Charts
 import CoreLocation
 import SwiftUI
 
-/// GPS Test's main data screen: fix state, position, altitude, accuracy, motion and timing.
+/// The main data screen: fix state, position, altitude, accuracy, motion and timing.
 struct StatusView: View {
     @Environment(LocationService.self) private var location
     @AppStorage(SettingsKey.coordinateFormat) private var format = CoordinateFormat.decimal
@@ -26,7 +26,7 @@ struct StatusView: View {
                     sourceSection
                 }
             }
-            .navigationTitle("GPS Test")
+            .navigationTitle("GPS Checker")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Restart", systemImage: "arrow.clockwise") { location.restart() }
@@ -104,7 +104,7 @@ struct StatusView: View {
         } header: {
             Text("Accuracy")
         } footer: {
-            Text("iOS does not let apps see individual satellites or their signal strength, so GPS Test shows the receiver's own accuracy estimate (68% confidence radius) instead of the satellite signal bars.")
+            Text("iOS does not let apps see individual satellites or their signal strength, so GPS Checker shows the receiver's own accuracy estimate (68% confidence radius) instead of the satellite signal bars.")
         }
     }
 

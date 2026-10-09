@@ -1,4 +1,4 @@
-name: GPS Test
+name: GPS Checker
 
 on:
   push:

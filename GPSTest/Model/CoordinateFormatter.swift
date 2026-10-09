@@ -1,6 +1,6 @@
 import Foundation
 
-/// The ways a position can be written, matching the formats GPS Test offers on Android.
+/// The ways a position can be written.
 enum CoordinateFormat: String, CaseIterable, Identifiable {
     case decimal, degreesMinutes, degreesMinutesSeconds, utm, mgrs
 

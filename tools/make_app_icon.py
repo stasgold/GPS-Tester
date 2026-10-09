@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Draws the GPS Test app icon: a green radar sweep with a position fix on a dark navy field.
+Draws the GPS Checker app icon: a green radar sweep with a position fix on a dark navy field.
 
     python3 tools/make_app_icon.py
 
