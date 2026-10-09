@@ -4,32 +4,34 @@ A native SwiftUI app for iPhone and iPad: a GNSS diagnostics screen, map, compas
 
 ## Screens
 
-- **Status**: fix state (searching / 2D / 3D / lost), time to first fix, fix age and time, update count and rate (Hz);
-  latitude and longitude in the chosen format plus MGRS; horizontal and vertical accuracy with a live two-minute chart;
-  altitude above sea level and above the WGS 84 ellipsoid, geoid separation, floor; speed, course and their accuracies;
-  compass heading; whether the fix is simulated or from an external accessory; Precise Location state.
-  **Restart** begins a new session so time to first fix is measured again. **Share** sends the position as text with
-  an Apple Maps link; long-press a coordinate to copy it.
-- **Map**: Apple Maps (standard, hybrid or satellite, with 3D elevation) showing your position and its accuracy circle,
-  every waypoint, and a dashed line to the waypoint you are navigating to. Save the current position as a waypoint.
-- **Compass**: a rotating compass card with true or magnetic north, heading accuracy, declination and field strength;
-  markers for the GPS course, the sun and the moon (dimmed below the horizon) and a big arrow towards the target
-  waypoint with its distance, bearing and time at the current speed. Falls back to GPS course on devices without a
-  magnetometer.
-- **Time**: local time, UTC, time zone and last fix time; sunrise, sunset, solar noon, day length, civil, nautical and
-  astronomical twilight, golden hour, and the sun's elevation and azimuth; moon phase, illumination, age, moonrise,
-  moonset, elevation, azimuth and distance.
-- **Waypoints**: save the current position or type coordinates (decimal, with optional N/S/E/W). Tap a waypoint to
-  navigate to it (compass and map); swipe or long-press to rename, copy, share, open in Maps or delete. Distance and
-  bearing from where you are update live.
-- **Settings** (gear on every screen): coordinate format (decimal degrees, degrees-minutes, degrees-minutes-seconds,
-  UTM, MGRS), units (metric, imperial, nautical), north reference, and keep the screen on.
+Receiver-style layout: a row of buttons on top, the current page in the middle, and page tiles at the bottom
+(each a live miniature: fix state, signal bars, sky plot, clock, map).
+
+- **Dashboard**: speedometer (km/h, mph or knots), compass with a needle that points north as the phone turns
+  (T/M for true or magnetic), and an altimeter with hundreds and thousands hands and a digital counter.
+- **Signal**: GNSS status (No Fix / 2D / 3D / Fix Lost), accuracy in big seven-segment digits, update count and
+  rate, one bar per recent fix graded red → green by its accuracy, and an average-accuracy quality bar.
+- **Sky**: polar plot turned with the phone showing the sun, the moon, the target waypoint and the direction of
+  travel, with sun and moon elevation, magnetic declination and time to first fix.
+- **Time**: UTC and local date and time, sunrise and sunset in LCD digits, the moon's current phase, and a 24-hour
+  dial shading day, twilight and night with a hand for now.
+- **Map**: Apple Maps with your accuracy circle, waypoints and a line to the target.
+
+Top buttons: **night mode** (red display for dark adaptation), **waypoints** (save, type, rename, share, navigate),
+**navigate** (compass card with target distance and bearing), **share** position, and **⋯** for the detailed data
+list, full sun and moon times, Restart GPS and Settings.
+
+Settings: coordinate format (decimal degrees, degrees-minutes, degrees-minutes-seconds, UTM, MGRS), units (metric,
+imperial, nautical), north reference, and keep the screen on.
+
+CI renders each page with sample data on every push; see the `ci-snapshots` branch.
 
 ### What iOS cannot do
 
 Apple gives apps no access to individual satellites: there is no list of satellites, constellation, signal-to-noise
 ratio, elevation/azimuth, "used in fix" flags or raw GNSS measurements. A satellite signal chart or sky view is
-therefore impossible on iOS. In their place the Status screen charts the receiver's accuracy estimate over time.
+therefore impossible on iOS. In their place the Signal screen grades each fix by the receiver's accuracy estimate, and the Sky screen plots the
+sun, moon and target instead of satellites.
 There is no way to clear assisted-GPS data either; **Restart** is the closest thing.
 
 ## Building
