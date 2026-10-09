@@ -3,23 +3,28 @@
 Keeps CI from piling up signing certificates.
 
 Each TestFlight run starts on a fresh Mac, so `xcodebuild -allowProvisioningUpdates` creates a new
-certificate on the team every time and the account soon hits Apple's limit. This script snapshots the
-team's certificates before the build and revokes the ones the build created once it is done.
+certificate on the team every time and the account soon hits Apple's limit.
 
     python3 ci/ci_certificates.py snapshot   # before archiving
     python3 ci/ci_certificates.py revoke     # after uploading (run even if the build failed)
 
-Only certificates that did not exist at snapshot time AND that Xcode created through the API
-(display name "Created via API") are revoked, so certificates made on a Mac are never touched.
-Revoking them does not affect builds already uploaded to TestFlight or the App Store.
+`snapshot` revokes certificates left behind by earlier runs (older than two hours, so a build running
+at the same time in another repository keeps its own) and remembers what is left. `revoke` removes the
+certificates this run created.
+
+Only certificates Xcode created through the API (display name "Created via API") are ever revoked, so
+certificates made on a Mac are never touched. Revoking them does not affect builds already uploaded to
+TestFlight or the App Store.
 
 Needs ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (the .p8 file) in the environment. Uses only the
 Python standard library plus the openssl command line tool.
 """
 
 import base64
+import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -66,7 +71,7 @@ def request(method: str, url: str):
 
 
 def certificates() -> dict:
-    url = f"{API}/certificates?limit=200&fields[certificates]=name,displayName,certificateType"
+    url = f"{API}/certificates?limit=200&fields[certificates]=name,displayName,certificateType,expirationDate"
     found = {}
     while url:
         page = request("GET", url)
@@ -76,13 +81,40 @@ def certificates() -> dict:
     return found
 
 
+def created_by_ci(attributes: dict) -> bool:
+    return attributes.get("displayName") == "Created via API"
+
+
+def age(attributes: dict) -> datetime.timedelta:
+    """Certificates last a year, so the creation time is the expiry date minus 365 days."""
+    text = re.sub(r"([+-]\d\d)(\d\d)$", r"\1:\2", attributes["expirationDate"].replace("Z", "+00:00"))
+    expires = datetime.datetime.fromisoformat(text)
+    return datetime.datetime.now(datetime.timezone.utc) - (expires - datetime.timedelta(days=365))
+
+
+def revoke(cert_id: str, attributes: dict) -> bool:
+    try:
+        request("DELETE", f"{API}/certificates/{cert_id}")
+        print(f"Revoked {attributes.get('certificateType')} certificate {attributes.get('name')} ({cert_id}).")
+        return True
+    except urllib.error.HTTPError as error:
+        print(f"::warning::Could not revoke certificate {cert_id}: HTTP {error.code} {error.read().decode()[:300]}")
+        return False
+
+
 def main() -> None:
     action = sys.argv[1] if len(sys.argv) > 1 else ""
     if action == "snapshot":
         before = certificates()
+        for cert_id, attributes in list(before.items()):
+            if created_by_ci(attributes) and age(attributes) > datetime.timedelta(hours=2):
+                if revoke(cert_id, attributes):
+                    del before[cert_id]
         with open(SNAPSHOT, "w") as f:
             json.dump(sorted(before), f)
-        print(f"{len(before)} certificates on the team before the build.")
+        print(f"{len(before)} certificates on the team before the build:")
+        for attributes in before.values():
+            print(f"  {attributes.get('certificateType')}: {attributes.get('displayName')} ({attributes.get('name')})")
     elif action == "revoke":
         if not os.path.exists(SNAPSHOT):
             print("No snapshot; nothing to revoke.")
@@ -90,13 +122,8 @@ def main() -> None:
         with open(SNAPSHOT) as f:
             before = set(json.load(f))
         for cert_id, attributes in certificates().items():
-            if cert_id in before or attributes.get("displayName") != "Created via API":
-                continue
-            try:
-                request("DELETE", f"{API}/certificates/{cert_id}")
-                print(f"Revoked {attributes.get('certificateType')} certificate {attributes.get('name')} ({cert_id}).")
-            except urllib.error.HTTPError as error:
-                print(f"::warning::Could not revoke certificate {cert_id}: HTTP {error.code} {error.read().decode()[:300]}")
+            if cert_id not in before and created_by_ci(attributes):
+                revoke(cert_id, attributes)
     else:
         sys.exit(__doc__)
 
