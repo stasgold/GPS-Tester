@@ -46,3 +46,11 @@ xcodebuild test -project GPSTest.xcodeproj -scheme GPSTest \
 sun and moon against SunCalc's fixtures, units, waypoints) on every push.
 
 The icon is drawn by `python3 tools/make_app_icon.py`.
+
+## TestFlight
+
+`.github/workflows/testflight.yml` archives the app on a GitHub macOS runner, signs it with team `KK2M84H83J`
+(Xcode creates the distribution certificate and profile itself) and uploads it to App Store Connect. Run it from
+*Actions › TestFlight › Run workflow*. It needs the repository secrets `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8`
+(an App Store Connect API key with the App Manager role) and the app created in App Store Connect with the bundle ID
+`com.stasgold.gps.tester`.
