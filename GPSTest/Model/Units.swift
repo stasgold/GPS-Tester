@@ -44,6 +44,41 @@ enum UnitSystem: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Speed as a number in this system's unit, for gauges.
+    func speedValue(_ metresPerSecond: Double) -> Double {
+        switch self {
+        case .metric: metresPerSecond * 3.6
+        case .imperial: metresPerSecond * 2.236_936
+        case .nautical: metresPerSecond * 1.943_844
+        }
+    }
+
+    var speedUnit: String {
+        switch self {
+        case .metric: "km/h"
+        case .imperial: "mph"
+        case .nautical: "knots"
+        }
+    }
+
+    /// Full scale of the speedometer and the step between its numbers.
+    var speedometerScale: (max: Double, step: Double) {
+        switch self {
+        case .metric: (200, 20)
+        case .imperial: (120, 10)
+        case .nautical: (100, 10)
+        }
+    }
+
+    /// Altitude as a number in this system's unit, for gauges.
+    func altitudeValue(_ metres: Double) -> Double {
+        self == .imperial ? metres * 3.280_84 : metres
+    }
+
+    var altitudeUnit: String { self == .imperial ? "feet" : "meters" }
+
+    var shortLengthUnit: String { self == .imperial ? "ft" : "m" }
+
     private static func number(_ value: Double, digits: Int) -> String {
         // Same decimal point as the coordinates, whatever the region.
         value.formatted(.number.precision(.fractionLength(digits)).grouping(.never).locale(Locale(identifier: "en_US_POSIX")))

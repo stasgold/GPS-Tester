@@ -12,6 +12,8 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: macos-15
+    permissions:
+      contents: write # to publish screenshots to the ci-snapshots branch
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +48,7 @@ jobs:
             -scheme GPSTest \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             CODE_SIGNING_ALLOWED=NO \
+            TEST_RUNNER_SNAPSHOT_DIR="$RUNNER_TEMP/snapshots" \
             | tee xcodebuild.log | grep -E "error:|warning:|Test (Suite|Case)|✔|✘|passed|failed|\*\* (BUILD|TEST)" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild.log
 
@@ -55,3 +58,21 @@ jobs:
         with:
           name: xcodebuild-log
           path: xcodebuild.log
+
+      - name: Publish screenshots
+        if: success() && github.event_name == 'push'
+        run: |
+          # Rendered by ScreenSnapshots in the tests; browse them on the ci-snapshots branch.
+          cd "$RUNNER_TEMP/snapshots" 2>/dev/null || { echo "No screenshots rendered."; exit 0; }
+          {
+            echo "# Screenshots"
+            echo
+            echo "Rendered from ${GITHUB_REF_NAME} @ ${GITHUB_SHA::7} with sample data."
+            echo
+            for f in *.jpg; do echo "<img src=\"$f\" width=\"300\">"; done
+          } > README.md
+          git init -q -b ci-snapshots .
+          git add .
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qm "Screenshots of ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-snapshots

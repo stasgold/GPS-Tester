@@ -17,10 +17,10 @@ enum FixStatus: Equatable {
     var title: String {
         switch self {
         case .off: "Off"
-        case .searching: "Searching…"
-        case .fix2D: "2D fix"
-        case .fix3D: "3D fix"
-        case .stale: "Fix lost"
+        case .searching: "No Fix"
+        case .fix2D: "2D Fix"
+        case .fix3D: "3D Fix"
+        case .stale: "Fix Lost"
         }
     }
 }
@@ -150,6 +150,22 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
 
     func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool {
         true
+    }
+
+    /// Feeds two minutes of made-up fixes, for screenshots and tests.
+    func loadSampleFixes(now: Date = Date()) {
+        isRunning = true
+        startedAt = now.addingTimeInterval(-63)
+        let accuracies: [Double] = [48, 30, 22, 16, 12, 9, 7, 6, 5, 4.7, 4.2, 3.9]
+        for second in 0..<60 {
+            let accuracy = second < accuracies.count ? accuracies[second] : 3.5 + Double(second % 7) * 0.4
+            let fix = CLLocation(coordinate: CLLocationCoordinate2D(latitude: 51.5007 + Double(second) * 0.00005,
+                                                                    longitude: -0.1246 + Double(second) * 0.00003),
+                                 altitude: 47, horizontalAccuracy: accuracy, verticalAccuracy: accuracy * 1.5,
+                                 course: 32, courseAccuracy: 5, speed: 13.9, speedAccuracy: 0.5,
+                                 timestamp: now.addingTimeInterval(Double(second - 59)))
+            record(fix)
+        }
     }
 
     // MARK: Bookkeeping
