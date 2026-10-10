@@ -40,11 +40,15 @@ jobs:
           ')
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
+      - name: Download satellite orbits
+        # Optional: the screenshots use real orbits when this works, sample ones otherwise.
+        run: curl -fsS --max-time 60 -o "$RUNNER_TEMP/gnss.json" "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=json" || true
+
       - name: Build and test
         run: |
           set -o pipefail
           # TEST_RUNNER_ variables reach the tests (without the prefix); ScreenSnapshots writes there.
-          TEST_RUNNER_SNAPSHOT_DIR="$RUNNER_TEMP/snapshots" xcodebuild test \
+          TEST_RUNNER_SNAPSHOT_DIR="$RUNNER_TEMP/snapshots" TEST_RUNNER_GNSS_JSON="$RUNNER_TEMP/gnss.json" xcodebuild test \
             -project GPSTest.xcodeproj \
             -scheme GPSTest \
             -destination "id=${{ steps.sim.outputs.udid }}" \

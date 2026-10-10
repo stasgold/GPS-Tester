@@ -54,6 +54,8 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     static let historyWindow: TimeInterval = 120
     /// A fix older than this is reported as lost.
     static let staleAfter: TimeInterval = 10
+    /// Horizontal accuracy (m) a fix needs to count as the first fix.
+    static let firstFixAccuracy = 20.0
 
     override init() {
         super.init()
@@ -175,7 +177,10 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         location = fix
         updateCount += 1
 
-        if timeToFirstFix == nil, let startedAt, fix.timestamp >= startedAt {
+        // iOS often hands over a fix the moment updates start (from Wi-Fi or another app's session);
+        // only a fresh fix with GNSS-like accuracy and an altitude counts as the first fix.
+        if timeToFirstFix == nil, let startedAt, fix.timestamp > startedAt,
+           fix.horizontalAccuracy <= Self.firstFixAccuracy, fix.verticalAccuracy > 0 {
             timeToFirstFix = fix.timestamp.timeIntervalSince(startedAt)
         }
 

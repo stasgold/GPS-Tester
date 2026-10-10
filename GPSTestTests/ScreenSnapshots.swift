@@ -15,10 +15,22 @@ struct ScreenSnapshots {
         let waypoints = WaypointStore(url: nil)
         waypoints.targetID = waypoints.add(name: "Car", latitude: 51.51, longitude: -0.13).id
 
+        // Real orbits when CI downloaded them, otherwise the sample constellations.
+        var orbits = SampleOrbits.elements()
+        if let path = ProcessInfo.processInfo.environment["GNSS_JSON"],
+           let data = FileManager.default.contents(atPath: path),
+           let real = try? OrbitalElements.decode(data), !real.isEmpty {
+            orbits = real
+            let lines = real.map { "\($0.label)\t\($0.constellation.shortName)\t\($0.name)\t\($0.epoch)" }
+            try lines.joined(separator: "\n").write(to: directory.appending(path: "orbits.txt"), atomically: true, encoding: .utf8)
+        }
+        let catalog = SatelliteCatalog(elements: orbits)
+
         for page in Page.allCases where page != .map {
             let view = RootView(initialPage: page)
                 .environment(location)
                 .environment(waypoints)
+                .environment(catalog)
                 .environment(\.colorScheme, .dark)
                 .frame(width: 393, height: 852)
             let renderer = ImageRenderer(content: view)
