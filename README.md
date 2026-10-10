@@ -11,11 +11,14 @@ Receiver-style layout: a row of buttons on top, the current page in the middle, 
   (T/M for true or magnetic), and an altimeter with hundreds and thousands hands and a digital counter.
 - **Signal**: GNSS status (No Fix / 2D / 3D / Fix Lost), accuracy in big seven-segment digits, update count and
   rate, one bar per recent fix graded red → green by its accuracy, and an average-accuracy quality bar.
-- **Sky**: polar plot turned with the phone showing the sun, the moon, the target waypoint and the direction of
-  travel, with sun and moon elevation, magnetic declination and time to first fix.
+- **Sky**: polar plot turned with the phone showing the GNSS satellites predicted above the horizon (GPS, GLONASS,
+  Galileo, BeiDou, QZSS, NavIC, SBAS; labelled G13, R720, E210, C19… with one shape per system), plus the sun, the
+  moon, the target waypoint and the direction of travel; In View / Above 15° counts, magnetic declination and time
+  to first fix.
 - **Time**: UTC and local date and time, sunrise and sunset in LCD digits, the moon's current phase, and a 24-hour
   dial shading day, twilight and night with a hand for now.
-- **Map**: Apple Maps with your accuracy circle, waypoints and a line to the target.
+- **Map**: Apple Maps with your accuracy circle, waypoints and a line to the target; the satellite button shows
+  every GNSS satellite's point on the Earth and the next hour's ground track of those in view.
 
 Top buttons: **night mode** (red display for dark adaptation), **waypoints** (save, type, rename, share, navigate),
 **navigate** (compass card with target distance and bearing), **share** position, and **⋯** for the detailed data
@@ -30,8 +33,15 @@ CI renders each page with sample data on every push; see the `ci-snapshots` bran
 
 Apple gives apps no access to individual satellites: there is no list of satellites, constellation, signal-to-noise
 ratio, elevation/azimuth, "used in fix" flags or raw GNSS measurements. A satellite signal chart or sky view is
-therefore impossible on iOS. In their place the Signal screen grades each fix by the receiver's accuracy estimate, and the Sky screen plots the
-sun, moon and target instead of satellites.
+therefore impossible on iOS. In their place the Signal screen grades each fix by the receiver's accuracy estimate, and the Sky screen plots where
+the satellites are, predicted from published orbits rather than reported by the receiver.
+
+### Satellite positions
+
+The app downloads the public GNSS orbits (`GROUP=gnss` from CelesTrak, about 100 KB, cached and refreshed at most
+every 12 hours; the request carries no location) and propagates them on the phone: two-body motion plus the
+Earth's J2 secular effects from the TLE mean elements. That stays within 0.1° of the full SGP4/SDP4 model on the
+sky over ten days, far finer than the plot needs. Orbits older than three weeks are not shown.
 There is no way to clear assisted-GPS data either; **Restart** is the closest thing.
 
 ## Building
