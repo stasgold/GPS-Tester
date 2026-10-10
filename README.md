@@ -9,8 +9,10 @@ Receiver-style layout: a row of buttons on top, the current page in the middle, 
 
 - **Dashboard**: speedometer (km/h, mph or knots), compass with a needle that points north as the phone turns
   (T/M for true or magnetic), and an altimeter with hundreds and thousands hands and a digital counter.
-- **Signal**: GNSS status (No Fix / 2D / 3D / Fix Lost), accuracy in big seven-segment digits, update count and
-  rate, one bar per recent fix graded red → green by its accuracy, and an average-accuracy quality bar.
+- **Signal**: GNSS status (No Fix / 2D / 3D / Fix Lost), accuracy in big seven-segment digits, predicted satellite
+  geometry (HDOP, PDOP), the best accuracy that geometry allows and an Open sky / Partly blocked / Blocked estimate
+  from comparing it with the reported accuracy, update count and rate, one bar per recent fix graded red → green by
+  its accuracy, and an average-accuracy quality bar.
 - **Sky**: polar plot turned with the phone showing the GNSS satellites predicted above the horizon (GPS, GLONASS,
   Galileo, BeiDou, QZSS, NavIC, SBAS; labelled G13, R720, E210, C19… with one shape per system), plus the sun, the
   moon, the target waypoint and the direction of travel; In View / Above 15° counts, magnetic declination and time
@@ -42,6 +44,11 @@ The app downloads the public GNSS orbits (`GROUP=gnss` from CelesTrak, about 100
 every 12 hours; the request carries no location) and propagates them on the phone: two-body motion plus the
 Earth's J2 secular effects from the TLE mean elements. That stays within 0.1° of the full SGP4/SDP4 model on the
 sky over ten days, far finer than the plot needs. Orbits older than three weeks are not shown.
+
+Dilution of precision is solved by least squares over the satellites predicted above a 10° mask (SBAS excluded),
+with one receiver clock per system as multi-GNSS receivers do. The best expected accuracy is HDOP × 5 m (a typical
+smartphone range error), never below 3 m; reported accuracy under twice that reads as open sky, under five times as
+partly blocked, otherwise blocked. It is a heuristic: iOS does not say which satellites it actually uses.
 There is no way to clear assisted-GPS data either; **Restart** is the closest thing.
 
 ## Building

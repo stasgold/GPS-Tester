@@ -84,7 +84,7 @@ struct FixBars: View {
             GeometryReader { proxy in
                 let slots = 12
                 let slot = proxy.size.width / CGFloat(slots)
-                let chartHeight = proxy.size.height - 64
+                let chartHeight = max(proxy.size.height - 64, 24)
                 ZStack(alignment: .topLeading) {
                     ForEach(1..<4) { line in
                         Path { path in
