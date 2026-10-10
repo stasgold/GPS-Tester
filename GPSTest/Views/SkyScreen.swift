@@ -271,12 +271,14 @@ struct SkyPlot: View {
                         let low = satellite.elevation < 10
                         context.fill(satellite.constellation.markerPath(in: box),
                                      with: .color(satellite.constellation.color.opacity(low ? 0.55 : 1)))
+                        // Labels near the horizon only add clutter: those satellites are usually blocked anyway.
+                        guard satellite.elevation >= 5 else { continue }
                         let text = context.resolve(Text(satellite.label)
-                            .font(.system(size: r * 0.048, weight: .medium).monospacedDigit())
+                            .font(.system(size: r * 0.042, weight: .medium).monospacedDigit())
                             .foregroundColor(.white))
                         let size = text.measure(in: CGSize(width: 200, height: 50))
-                        let tag = CGRect(x: p.x - size.width / 2 - 4, y: p.y + marker / 2 + 2,
-                                         width: size.width + 8, height: size.height + 2)
+                        let tag = CGRect(x: p.x - size.width / 2 - 3, y: p.y + marker / 2 + 1,
+                                         width: size.width + 6, height: size.height)
                         let rounded = Path(roundedRect: tag, cornerRadius: 4)
                         context.fill(rounded, with: .color(Palette.panel))
                         context.stroke(rounded, with: .color(.white.opacity(low ? 0.5 : 1)), lineWidth: 1)

@@ -74,6 +74,9 @@ struct OrbitalElements: Codable, Equatable, Identifiable {
         if constellation == .beidou, let number = Self.firstMatch(#"\(C(\d+)\)"#, in: name) {
             return "C" + String(format: "%02d", Int(number) ?? 0)
         }
+        if constellation == .navic, let series = Self.firstMatch(#"IRNSS-(\d[A-Z])"#, in: name) {
+            return "I" + series.uppercased()
+        }
         if constellation == .galileo, let number = Self.firstMatch(#"GSAT0*(\d+)"#, in: name) {
             return "E" + number
         }

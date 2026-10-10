@@ -86,6 +86,10 @@ struct SatelliteTests {
         #expect(element("BEIDOU-3 M1 (C19)").constellation == .beidou)
         #expect(element("QZS-2 (QZSS/PRN 184)").label == "J184")
         #expect(element("IRNSS-1I").constellation == .navic)
+        #expect(element("IRNSS-1B").label == "I1B")
+        #expect(element("NVS-01 (IRNSS-1J)").label == "I1J")
+        #expect(element("SES-5 (EGNOS/PRN 136)").label == "S136")
+        #expect(element("COSMOS 2620").label == "R2620")
     }
 
     @Test func catalogSortsByElevationAndDropsOldOrbits() {
