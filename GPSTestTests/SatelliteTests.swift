@@ -110,3 +110,49 @@ struct SatelliteTests {
         #expect(OrbitalElements.parseEpoch("nonsense") == nil)
     }
 }
+
+/// Reference values from numpy (least squares with one clock per system).
+struct DilutionOfPrecisionTests {
+    private func sat(_ c: Constellation, _ az: Double, _ el: Double, _ id: Int) -> SatellitePosition {
+        SatellitePosition(id: id, label: "", constellation: c, azimuth: az, elevation: el, rangeKm: 20000, latitude: 0, longitude: 0)
+    }
+
+    @Test func zenithPlusThreeOnTheHorizon() throws {
+        let dop = try #require(DilutionOfPrecision.predict(from: [sat(.gps, 0, 90, 1), sat(.gps, 0, 0, 2), sat(.gps, 120, 0, 3),
+                                                                  sat(.gps, 240, 0, 4)], mask: 0))
+        #expect(abs(dop.horizontal - 1.1547005383792517) < 1e-9)
+        #expect(abs(dop.vertical - 1.1547005383792515) < 1e-9)
+        #expect(abs(dop.position - 1.632993161855452) < 1e-9)
+    }
+
+    @Test func twoSystemsWithSeparateClocks() throws {
+        let satellites = [sat(.gps, 0, 90, 1), sat(.gps, 45, 30, 2), sat(.gps, 135, 30, 3), sat(.gps, 225, 30, 4),
+                          sat(.gps, 315, 30, 5), sat(.galileo, 10, 60, 6), sat(.galileo, 190, 20, 7), sat(.galileo, 100, 45, 8)]
+        let dop = try #require(DilutionOfPrecision.predict(from: satellites))
+        #expect(abs(dop.horizontal - 1.0096756946332062) < 1e-9)
+        #expect(abs(dop.vertical - 1.876901619276039) < 1e-9)
+        #expect(abs(dop.position - 2.1312448702047506) < 1e-9)
+        #expect(dop.satelliteCount == 8)
+    }
+
+    @Test func masksLowSatellitesAndSBASAndNeedsEnough() {
+        let satellites = [sat(.gps, 0, 90, 1), sat(.gps, 0, 5, 2), sat(.gps, 120, 30, 3), sat(.other, 240, 40, 4)]
+        #expect(DilutionOfPrecision.predict(from: satellites) == nil)
+        #expect(DilutionOfPrecision.invert([[1, 2], [2, 4]]) == nil)
+    }
+
+    @Test func realisticSkyGivesLowDOP() throws {
+        let date = SatelliteTests.epoch
+        let positions = SatelliteCatalog(elements: SampleOrbits.elements(epoch: date))
+            .positions(at: date, latitude: 51.5, longitude: -0.12)
+        let dop = try #require(DilutionOfPrecision.predict(from: positions))
+        #expect(dop.horizontal > 0.3 && dop.horizontal < 1.5)
+        #expect(dop.expectedAccuracy >= DilutionOfPrecision.accuracyFloor)
+    }
+
+    @Test func skyViewFromAccuracyRatio() {
+        #expect(SkyView(reported: 4.7, expected: 3) == .open)
+        #expect(SkyView(reported: 12, expected: 3) == .partial)
+        #expect(SkyView(reported: 40, expected: 3) == .obstructed)
+    }
+}

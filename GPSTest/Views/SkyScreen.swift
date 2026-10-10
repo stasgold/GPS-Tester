@@ -16,6 +16,9 @@ struct SkyScreen: View {
                 HStack(alignment: .top) {
                     stat("In View", visible.isEmpty && catalog.elements.isEmpty ? "--" : "\(visible.count)", alignment: .leading)
                     Spacer()
+                    stat("HDOP", DilutionOfPrecision.predict(from: visible).map { String(format: "%.2f", $0.horizontal) } ?? "--",
+                         alignment: .center)
+                    Spacer()
                     stat("Above 15°", visible.isEmpty && catalog.elements.isEmpty ? "--" : "\(visible.filter { $0.elevation >= 15 }.count)",
                          alignment: .trailing)
                 }

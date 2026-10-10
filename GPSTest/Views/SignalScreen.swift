@@ -6,6 +6,7 @@ import SwiftUI
 /// one bar per fix, its height and colour graded from the accuracy of that fix.
 struct SignalScreen: View {
     @Environment(LocationService.self) private var location
+    @Environment(SatelliteCatalog.self) private var catalog
     @AppStorage(SettingsKey.units) private var units = UnitSystem.metric
 
     var body: some View {
@@ -20,12 +21,22 @@ struct SignalScreen: View {
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                 }
-                .frame(height: 130)
+                .frame(height: 116)
+                GeometryPanel(dop: predictedDOP(at: context.date), accuracy: location.history.averageAccuracy(),
+                              units: units, hasOrbits: !catalog.elements.isEmpty)
                 FixBars(samples: Array(location.history.suffix(12)), updates: location.updateCount,
                         rate: location.updateRate, units: units)
                 QualityBar(accuracy: location.history.averageAccuracy())
             }
         }
+    }
+
+    /// Geometry of the satellites predicted overhead right now.
+    private func predictedDOP(at date: Date) -> DilutionOfPrecision? {
+        guard let fix = location.location else { return nil }
+        let satellites = catalog.positions(at: date, latitude: fix.coordinate.latitude, longitude: fix.coordinate.longitude,
+                                           altitude: fix.verticalAccuracy > 0 ? fix.altitude : 0)
+        return DilutionOfPrecision.predict(from: satellites)
     }
 
     private var accuracyText: String {
@@ -211,5 +222,67 @@ struct MarkerTriangle: Shape {
         path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
         path.closeSubpath()
         return path
+    }
+}
+
+/// Predicted geometry (HDOP), the accuracy it should allow, and how open the sky looks by comparison.
+struct GeometryPanel: View {
+    var dop: DilutionOfPrecision?
+    /// Average reported horizontal accuracy, metres.
+    var accuracy: Double?
+    var units: UnitSystem
+    var hasOrbits: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            column("Predicted HDOP", dop.map { String(format: "%.2f", $0.horizontal) } ?? "--",
+                   detail: dop.map { "PDOP \(String(format: "%.1f", $0.position)) · \($0.satelliteCount) sats" }
+                       ?? (hasOrbits ? "Waiting for a fix" : "No orbits yet"))
+            column("Best expected", dop.map { "±" + units.length($0.expectedAccuracy) } ?? "--",
+                   detail: accuracy.map { "Now ±" + units.length($0) } ?? " ")
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Sky").font(.subheadline).foregroundStyle(.white.opacity(0.8))
+                if let sky {
+                    Text(sky.title)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(color(sky))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                } else {
+                    Text("--").font(.system(size: 22, weight: .semibold)).foregroundStyle(.white)
+                }
+                Text("from accuracy vs geometry")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(12)
+        .panel()
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(sky?.explanation ?? "")
+    }
+
+    private var sky: SkyView? {
+        guard let dop, let accuracy else { return nil }
+        return SkyView(reported: accuracy, expected: dop.expectedAccuracy)
+    }
+
+    private func color(_ sky: SkyView) -> Color {
+        switch sky {
+        case .open: .green
+        case .partial: .yellow
+        case .obstructed: .orange
+        }
+    }
+
+    private func column(_ title: String, _ value: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.subheadline).foregroundStyle(.white.opacity(0.8)).lineLimit(1).minimumScaleFactor(0.7)
+            Text(value).font(.system(size: 22, weight: .semibold).monospacedDigit()).foregroundStyle(Palette.accent)
+            Text(detail).font(.caption2).foregroundStyle(.white.opacity(0.6)).lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
