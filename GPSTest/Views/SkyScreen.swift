@@ -50,13 +50,20 @@ struct SkyScreen: View {
             } else if catalog.isStale {
                 Text("Satellite orbits are out of date. Connect to the internet to update them.")
             } else {
-                Text("Predicted from published orbits\(updatedText). iOS doesn't say which ones the phone is using.")
+                Text("Predicted for \(observerText) from published orbits\(updatedText). iOS doesn't say which ones the phone is using.")
             }
         }
         .font(.caption)
         .foregroundStyle(.white.opacity(0.75))
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
+    }
+
+    /// The position the satellites are worked out for: your current fix.
+    private var observerText: String {
+        guard let fix = location.location else { return "your position" }
+        return CoordinateFormatter.singleLine(latitude: fix.coordinate.latitude, longitude: fix.coordinate.longitude,
+                                              format: .degreesMinutes)
     }
 
     private var updatedText: String {
