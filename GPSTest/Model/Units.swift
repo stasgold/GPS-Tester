@@ -64,9 +64,9 @@ enum UnitSystem: String, CaseIterable, Identifiable {
     /// Full scale of the speedometer and the step between its numbers.
     var speedometerScale: (max: Double, step: Double) {
         switch self {
-        case .metric: (200, 20)
-        case .imperial: (120, 10)
-        case .nautical: (100, 10)
+        case .metric: (300, 30)
+        case .imperial: (180, 20)
+        case .nautical: (160, 20)
         }
     }
 

@@ -36,7 +36,9 @@ struct SignalQualityTests {
     @Test func gaugeUnits() {
         #expect(abs(UnitSystem.metric.speedValue(10) - 36) < 1e-9)
         #expect(UnitSystem.imperial.speedUnit == "mph")
-        #expect(UnitSystem.nautical.speedometerScale.max == 100)
+        #expect(UnitSystem.metric.speedometerScale.max == 300)
+        #expect(UnitSystem.imperial.speedometerScale.max == 180)
+        #expect(UnitSystem.nautical.speedometerScale.max == 160)
         #expect(abs(UnitSystem.imperial.altitudeValue(100) - 328.084) < 1e-9)
         #expect(UnitSystem.metric.altitudeUnit == "meters")
     }
