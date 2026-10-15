@@ -64,6 +64,10 @@ xcodebuild test -project GPSTest.xcodeproj -scheme GPSTest \
 `.github/workflows/ios.yml` builds the app and runs its unit tests (coordinate conversions checked against PROJ,
 sun and moon against SunCalc's fixtures, units, waypoints) on every push.
 
+The Moon on the Time screen is NASA's Lunar Reconnaissance Orbiter colour mosaic (Scientific Visualization Studio
+CGI Moon Kit, public domain), projected to the near side by `python3 tools/make_moon_image.py` (the *Moon image*
+workflow runs it and commits the result); the app shades it to the current phase.
+
 The icon is drawn by `python3 tools/make_app_icon.py`.
 
 ## TestFlight
