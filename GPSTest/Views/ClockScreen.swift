@@ -76,23 +76,26 @@ struct MoonPhaseView: View {
     var phase: Double
 
     var body: some View {
-        Canvas { context, size in
-            let r = min(size.width, size.height) / 2
-            let center = CGPoint(x: size.width / 2, y: size.height / 2)
-            let disc = Path(ellipseIn: CGRect(x: center.x - r, y: center.y - r, width: r * 2, height: r * 2))
-            context.fill(disc, with: .radialGradient(Gradient(colors: [Color(white: 0.28), Color(white: 0.16)]),
-                                                     center: center, startRadius: 0, endRadius: r))
-            context.fill(Self.litPath(phase: phase, center: center, radius: r),
-                         with: .radialGradient(Gradient(colors: [Color(white: 0.92), Color(white: 0.7)]),
-                                               center: center, startRadius: 0, endRadius: r))
-            // A few maria so it reads as the moon rather than a ball.
-            for (dx, dy, spotSize) in [(-0.3, -0.25, 0.22), (0.15, -0.35, 0.16), (-0.05, 0.1, 0.2), (0.3, 0.25, 0.12), (-0.35, 0.3, 0.1)] {
-                let rr = r * spotSize
-                let spot = Path(ellipseIn: CGRect(x: center.x + r * dx - rr, y: center.y + r * dy - rr, width: rr * 2, height: rr * 2))
-                context.fill(spot, with: .color(.black.opacity(0.12)))
+        ZStack {
+            // NASA LRO colour mosaic of the near side (public domain), rendered by tools/make_moon_image.py.
+            Image("Moon")
+                .resizable()
+                .interpolation(.high)
+                .scaledToFit()
+            // Night side: the disc minus the lit part, softened so the terminator isn't a hard edge.
+            // A little earthshine is left visible, as in a real photo.
+            Canvas { context, size in
+                let r = min(size.width, size.height) / 2
+                let center = CGPoint(x: size.width / 2, y: size.height / 2)
+                var shadow = Path(ellipseIn: CGRect(x: center.x - r * 1.1, y: center.y - r * 1.1, width: r * 2.2, height: r * 2.2))
+                shadow.addPath(Self.litPath(phase: phase, center: center, radius: r))
+                context.addFilter(.blur(radius: r * 0.025))
+                context.fill(shadow, with: .color(.black.opacity(0.86)), style: FillStyle(eoFill: true))
             }
         }
+        .clipShape(Circle())
         .aspectRatio(1, contentMode: .fit)
+        .shadow(color: .black.opacity(0.35), radius: 8)
         .accessibilityHidden(true)
     }
 
