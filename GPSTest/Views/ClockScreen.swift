@@ -26,7 +26,8 @@ struct ClockScreen: View {
                 HStack(spacing: 16) {
                     let illumination = Astronomy.moonIllumination(at: now)
                     VStack(spacing: 6) {
-                        MoonPhaseView(phase: illumination.phase)
+                        MoonPhaseView(phase: illumination.phase, brightLimbAngle: illumination.angle,
+                                      parallacticAngle: parallacticAngle(now))
                         Text("\(illumination.phaseName) · \(Int((illumination.fraction * 100).rounded()))%")
                             .font(.footnote)
                             .foregroundStyle(.white)
@@ -46,6 +47,12 @@ struct ClockScreen: View {
                 .padding(.vertical, 6)
         }
         .frame(minHeight: 84, maxHeight: 130)
+    }
+
+    /// Turns the moon to match the sky here; north-up when there is no fix yet.
+    private func parallacticAngle(_ now: Date) -> Double {
+        guard let fix = location.location else { return 0 }
+        return Astronomy.moonParallacticAngle(at: now, latitude: fix.coordinate.latitude, longitude: fix.coordinate.longitude)
     }
 
     private func sunTimes(_ now: Date) -> Astronomy.SunTimes? {
@@ -70,10 +77,15 @@ struct ClockScreen: View {
     }
 }
 
-/// The moon as it looks tonight: lit part on the right while waxing, on the left while waning.
+/// The moon as it looks in the sky here and now: the lit part faces the sun, and the disc is turned so
+/// that "up" is towards the zenith, so it flips over in the southern hemisphere and tilts through the night.
 struct MoonPhaseView: View {
     /// 0 new, 0.25 first quarter, 0.5 full, 0.75 last quarter.
     var phase: Double
+    /// Position angle of the bright limb, radians eastward from celestial north (Astronomy.MoonIllumination.angle).
+    var brightLimbAngle: Double = -.pi / 2
+    /// Astronomy.moonParallacticAngle: 0 keeps celestial north up.
+    var parallacticAngle: Double = 0
 
     var body: some View {
         ZStack {
@@ -88,21 +100,25 @@ struct MoonPhaseView: View {
                 let r = min(size.width, size.height) / 2
                 let center = CGPoint(x: size.width / 2, y: size.height / 2)
                 var shadow = Path(ellipseIn: CGRect(x: center.x - r * 1.1, y: center.y - r * 1.1, width: r * 2.2, height: r * 2.2))
-                shadow.addPath(Self.litPath(phase: phase, center: center, radius: r))
+                shadow.addPath(Self.litPath(phase: phase, center: center, radius: r, litOnRight: true))
                 context.addFilter(.blur(radius: r * 0.025))
                 context.fill(shadow, with: .color(.black.opacity(0.86)), style: FillStyle(eoFill: true))
             }
+            // The lit side is drawn on the right (position angle 270°); turn it to face the bright limb.
+            .rotationEffect(.radians(-(brightLimbAngle + .pi / 2)))
         }
         .clipShape(Circle())
+        // Celestial north sits `parallacticAngle` clockwise of the zenith direction.
+        .rotationEffect(.radians(parallacticAngle))
         .aspectRatio(1, contentMode: .fit)
         .shadow(color: .black.opacity(0.35), radius: 8)
         .accessibilityHidden(true)
     }
 
     /// The lit part: the bright limb's half-circle closed by the terminator, a half-ellipse.
-    static func litPath(phase: Double, center: CGPoint, radius r: CGFloat) -> Path {
+    static func litPath(phase: Double, center: CGPoint, radius r: CGFloat, litOnRight: Bool = false) -> Path {
         let waxing = phase < 0.5
-        let side: CGFloat = waxing ? 1 : -1
+        let side: CGFloat = litOnRight || waxing ? 1 : -1
         let k = CGFloat(cos(2 * .pi * phase)) // 1 new, 0 quarter, -1 full
         var path = Path()
         for step in 0...60 {

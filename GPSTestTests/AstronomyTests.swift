@@ -85,3 +85,21 @@ struct AstronomyTests {
         #expect(name(0.9) == "Waning Crescent")
     }
 }
+
+struct MoonOrientationTests {
+    @Test func parallacticAngleMatchesSunCalcFormula() {
+        let date = Date(timeIntervalSince1970: 1_362_441_600) // 2013-03-05T00:00:00Z
+        #expect(abs(Astronomy.moonParallacticAngle(at: date, latitude: 50.5, longitude: 30.5) - -0.5983211760423401) < 1e-9)
+        #expect(abs(Astronomy.moonParallacticAngle(at: date, latitude: -33.9, longitude: 151.2) - 2.053458693824633) < 1e-9)
+    }
+
+    @Test func moonOnTheMeridianIsUprightInTheNorthAndUpsideDownInTheSouth() {
+        // Find when the moon crosses the meridian (hour angle 0) by scanning for the smallest |angle| in the north.
+        let start = Date(timeIntervalSince1970: 1_791_547_200)
+        let times = stride(from: 0.0, to: 86400 * 1.1, by: 60).map { start.addingTimeInterval($0) }
+        let transit = times.min { abs(Astronomy.moonParallacticAngle(at: $0, latitude: 50, longitude: 0)) <
+                                  abs(Astronomy.moonParallacticAngle(at: $1, latitude: 50, longitude: 0)) }!
+        #expect(abs(Astronomy.moonParallacticAngle(at: transit, latitude: 50, longitude: 0)) < 0.05)
+        #expect(abs(abs(Astronomy.moonParallacticAngle(at: transit, latitude: -50, longitude: 0)) - .pi) < 0.05)
+    }
+}

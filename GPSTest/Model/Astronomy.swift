@@ -123,6 +123,17 @@ enum Astronomy {
         return (Position(azimuth: compassDegrees(fromSouthAzimuth: raw.azimuth), altitude: raw.altitude / rad), raw.distance)
     }
 
+    /// Parallactic angle of the moon in radians: how far celestial north on the moon's disc is turned from
+    /// "straight up" (towards the zenith) for this observer. 0 on the meridian in the north, π in the south.
+    static func moonParallacticAngle(at date: Date, latitude: Double, longitude: Double) -> Double {
+        let lw = rad * -longitude
+        let phi = rad * latitude
+        let d = toDays(date)
+        let c = moonCoords(d)
+        let h = siderealTime(d, lw) - c.ra
+        return atan2(sin(h), tan(phi) * cos(c.dec) - sin(c.dec) * cos(h))
+    }
+
     static func moonIllumination(at date: Date) -> MoonIllumination {
         let d = toDays(date)
         let s = sunCoords(d)
