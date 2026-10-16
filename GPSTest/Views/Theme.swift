@@ -26,7 +26,7 @@ extension SignalQuality {
 extension FixStatus {
     var color: Color {
         switch self {
-        case .fix3D: .green
+        case .fix3D: Color(red: 0, green: 1, blue: 0)
         case .fix2D: .yellow
         case .searching: .red
         case .stale: .orange
@@ -75,19 +75,27 @@ struct ReadoutTile<Content: View>: View {
     }
 }
 
-/// Seven-segment LCD characters. Draws digits, space, '-', ':' and '.'; anything else is a space.
+/// LCD readout in a block font: each character is drawn on a 5 × 9 grid of square cells with hairline gaps,
+/// like a receiver's segmented display. Digits, the letters of the month names, space, '-', ':' and '.'.
 struct SegmentText: View {
     var text: String
     var color: Color = Palette.accent
 
     var body: some View {
         Canvas { context, size in
-            let h = size.height
+            let cell = size.height / CGFloat(Self.rows)
+            let inset = cell * 0.04
             var x: CGFloat = 0
-            for character in text {
-                let width = Self.width(of: character) * h
-                draw(character, in: CGRect(x: x, y: 0, width: width, height: h), context: &context)
-                x += width + Self.gap * h
+            for character in text.uppercased() {
+                let glyph = Self.glyph(character)
+                for (row, line) in glyph.enumerated() {
+                    for (column, mark) in line.enumerated() where mark == "#" {
+                        let rect = CGRect(x: x + CGFloat(column) * cell, y: CGFloat(row) * cell, width: cell, height: cell)
+                            .insetBy(dx: inset, dy: inset)
+                        context.fill(Path(rect), with: .color(color))
+                    }
+                }
+                x += CGFloat(Self.width(of: character) + Self.spacing) * cell
             }
         }
         .aspectRatio(Self.aspectRatio(of: text), contentMode: .fit)
@@ -95,56 +103,65 @@ struct SegmentText: View {
         .accessibilityLabel(text)
     }
 
-    private static let gap: CGFloat = 0.12
+    static let rows = 9
+    private static let spacing = 1
 
-    private static func width(of character: Character) -> CGFloat {
-        character == ":" || character == "." ? 0.18 : 0.56
+    private static func width(of character: Character) -> Int {
+        glyph(character).first?.count ?? 5
     }
 
+    /// Width over height of the whole string.
     static func aspectRatio(of text: String) -> CGFloat {
-        let widths = text.map(width(of:))
-        return max(widths.reduce(0, +) + gap * CGFloat(max(widths.count - 1, 0)), 0.1)
+        let cells = text.uppercased().map { width(of: $0) }
+        let total = cells.reduce(0, +) + spacing * max(cells.count - 1, 0)
+        return max(CGFloat(total) / CGFloat(rows), 0.1)
     }
 
-    /// Segments a–g for each character: top, upper right, lower right, bottom, lower left, upper left, middle.
-    private static let segments: [Character: String] = [
-        "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc",
-        "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg", "-": "g",
-    ]
+    private static func glyph(_ character: Character) -> [String] {
+        if let rows = glyphs[character] { return rows }
+        return Array(repeating: "...", count: rows) // unknown characters are blank
+    }
 
-    private func draw(_ character: Character, in rect: CGRect, context: inout GraphicsContext) {
-        let h = rect.height, w = rect.width, t = h * 0.12, g = t * 0.18
-        let shading = GraphicsContext.Shading.color(color)
-        func bar(_ r: CGRect) {
-            context.fill(Path(roundedRect: r.offsetBy(dx: rect.minX, dy: rect.minY), cornerRadius: t * 0.35), with: shading)
-        }
-        switch character {
-        case ":":
-            bar(CGRect(x: (w - t) / 2, y: h * 0.28, width: t, height: t))
-            bar(CGRect(x: (w - t) / 2, y: h * 0.66, width: t, height: t))
-            return
-        case ".":
-            bar(CGRect(x: (w - t) / 2, y: h - t, width: t, height: t))
-            return
-        default:
-            break
-        }
-        let lit = Self.segments[character] ?? ""
-        let horizontalWidth = w - t - 2 * g
-        let verticalHeight = h / 2 - t / 2 - 2 * g
-        let rects: [Character: CGRect] = [
-            "a": CGRect(x: t / 2 + g, y: 0, width: horizontalWidth, height: t),
-            "g": CGRect(x: t / 2 + g, y: (h - t) / 2, width: horizontalWidth, height: t),
-            "d": CGRect(x: t / 2 + g, y: h - t, width: horizontalWidth, height: t),
-            "f": CGRect(x: 0, y: t / 2 + g, width: t, height: verticalHeight),
-            "b": CGRect(x: w - t, y: t / 2 + g, width: t, height: verticalHeight),
-            "e": CGRect(x: 0, y: h / 2 + g, width: t, height: verticalHeight),
-            "c": CGRect(x: w - t, y: h / 2 + g, width: t, height: verticalHeight),
+    private static let glyphs: [Character: [String]] = {
+        func g(_ rows: String...) -> [String] { rows }
+        let box = g("#####", "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", "#####")
+        let five = g("#####", "#....", "#....", "#....", "#####", "....#", "....#", "....#", "#####")
+        return [
+            "0": box,
+            "1": g("....#", "....#", "....#", "....#", "....#", "....#", "....#", "....#", "....#"),
+            "2": g("#####", "....#", "....#", "....#", "#####", "#....", "#....", "#....", "#####"),
+            "3": g("#####", "....#", "....#", "....#", "#####", "....#", "....#", "....#", "#####"),
+            "4": g("#...#", "#...#", "#...#", "#...#", "#####", "....#", "....#", "....#", "....#"),
+            "5": five,
+            "6": g("#####", "#....", "#....", "#....", "#####", "#...#", "#...#", "#...#", "#####"),
+            "7": g("#####", "....#", "....#", "....#", "....#", "....#", "....#", "....#", "....#"),
+            "8": g("#####", "#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#", "#####"),
+            "9": g("#####", "#...#", "#...#", "#...#", "#####", "....#", "....#", "....#", "#####"),
+            "A": g("#####", "#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#", "#...#"),
+            "B": g("####.", "#...#", "#...#", "#...#", "####.", "#...#", "#...#", "#...#", "####."),
+            "C": g("#####", "#....", "#....", "#....", "#....", "#....", "#....", "#....", "#####"),
+            "D": g("####.", "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", "####."),
+            "E": g("#####", "#....", "#....", "#....", "####.", "#....", "#....", "#....", "#####"),
+            "F": g("#####", "#....", "#....", "#....", "####.", "#....", "#....", "#....", "#...."),
+            "G": g("#####", "#....", "#....", "#....", "#..##", "#...#", "#...#", "#...#", "#####"),
+            "J": g("....#", "....#", "....#", "....#", "....#", "....#", "#...#", "#...#", "#####"),
+            "L": g("#....", "#....", "#....", "#....", "#....", "#....", "#....", "#....", "#####"),
+            "M": g("#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#", "#...#", "#...#"),
+            "N": g("#...#", "##..#", "##..#", "#.#.#", "#.#.#", "#..##", "#..##", "#...#", "#...#"),
+            "O": box,
+            "P": g("#####", "#...#", "#...#", "#...#", "#####", "#....", "#....", "#....", "#...."),
+            "R": g("#####", "#...#", "#...#", "#...#", "#####", "#.#..", "#..#.", "#...#", "#...#"),
+            "S": five,
+            "T": g("#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.."),
+            "U": g("#...#", "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", "#####"),
+            "V": g("#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", ".#.#.", "..#.."),
+            "Y": g("#...#", "#...#", "#...#", "#...#", "#####", "..#..", "..#..", "..#..", "..#.."),
+            "-": g(".....", ".....", ".....", ".....", "#####", ".....", ".....", ".....", "....."),
+            ":": g(".", ".", "#", ".", ".", ".", "#", ".", "."),
+            ".": g(".", ".", ".", ".", ".", ".", ".", ".", "#"),
+            " ": g("...", "...", "...", "...", "...", "...", "...", "...", "..."),
         ]
-        for segment in lit {
-            if let r = rects[segment] { bar(r) }
-        }
-    }
+    }()
 }
 
 /// Point at `radius` from `center` on a compass bearing (0° up, clockwise).

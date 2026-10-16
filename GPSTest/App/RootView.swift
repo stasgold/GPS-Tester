@@ -86,17 +86,17 @@ struct RootView: View {
     private var topBar: some View {
         HStack(spacing: 10) {
             topButton("Night mode", nightMode ? "sun.max.fill" : "moon.fill") { nightMode.toggle() }
-            topButton("Waypoints", "figure.walk.motion") { sheet = .waypoints }
+            topButton("Waypoints", "figure.hiking") { sheet = .waypoints }
             topButton("Navigate", "location.north.fill") { sheet = .compass }
             if let fix = location.location {
                 ShareLink(item: ShareText.position(latitude: fix.coordinate.latitude, longitude: fix.coordinate.longitude,
                                                    altitude: fix.verticalAccuracy > 0 ? fix.altitude : nil,
                                                    accuracy: fix.horizontalAccuracy, format: format, units: units)) {
-                    topIcon("square.and.arrow.up")
+                    topIcon("point.3.filled.connected.trianglepath.dotted")
                 }
                 .accessibilityLabel("Share location")
             } else {
-                topIcon("square.and.arrow.up").opacity(0.4).accessibilityLabel("Share location, no fix yet")
+                topIcon("point.3.filled.connected.trianglepath.dotted").opacity(0.4).accessibilityLabel("Share location, no fix yet")
             }
             Menu {
                 Button("Details", systemImage: "list.bullet.rectangle") { sheet = .details }
@@ -104,7 +104,7 @@ struct RootView: View {
                 Button("Restart GPS", systemImage: "arrow.clockwise") { location.restart() }
                 Button("Settings", systemImage: "gearshape") { sheet = .settings }
             } label: {
-                topIcon("ellipsis")
+                topIcon("ellipsis", rotation: 90)
             }
             .accessibilityLabel("More")
         }
@@ -116,9 +116,10 @@ struct RootView: View {
             .accessibilityLabel(label)
     }
 
-    private func topIcon(_ symbol: String) -> some View {
+    private func topIcon(_ symbol: String, rotation: Double = 0) -> some View {
         Image(systemName: symbol)
             .font(.system(size: 26, weight: .semibold))
+            .rotationEffect(.degrees(rotation))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
@@ -158,7 +159,8 @@ private struct PageTile: View {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     let status = location.fixStatus(at: context.date)
                     VStack(spacing: 6) {
-                        Circle().fill(status.color).frame(width: 22, height: 22)
+                        Circle().fill(status.color).frame(width: 24, height: 24)
+                            .overlay(Circle().stroke(.black.opacity(0.5), lineWidth: 1.5))
                         Text(status.title)
                             .font(.system(size: 17))
                             .foregroundStyle(.white)

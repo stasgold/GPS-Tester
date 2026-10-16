@@ -11,11 +11,11 @@ struct ClockScreen: View {
             VStack(spacing: 10) {
                 Grid(horizontalSpacing: 10, verticalSpacing: 10) {
                     GridRow {
-                        clockTile("UTC Date", Self.text(now, "dd.MM.yy", .gmt))
+                        clockTile("UTC Date", Self.text(now, "dd MMM yy", .gmt).uppercased())
                         clockTile("UTC Time", Self.text(now, "HH:mm:ss", .gmt))
                     }
                     GridRow {
-                        clockTile("Local Date", Self.text(now, "dd.MM.yy", .current))
+                        clockTile("Local Date", Self.text(now, "dd MMM yy", .current).uppercased())
                         clockTile("Local Time", Self.text(now, "HH:mm:ss", .current))
                     }
                     GridRow {
@@ -23,17 +23,12 @@ struct ClockScreen: View {
                         clockTile("Sunset", sun?.sunset.map { Self.text($0, "HH:mm:ss", .current) } ?? "--:--:--")
                     }
                 }
-                HStack(spacing: 16) {
+                HStack(spacing: 14) {
                     let illumination = Astronomy.moonIllumination(at: now)
-                    VStack(spacing: 6) {
-                        MoonPhaseView(phase: illumination.phase, brightLimbAngle: illumination.angle,
-                                      parallacticAngle: parallacticAngle(now))
-                        Text("\(illumination.phaseName) · \(Int((illumination.fraction * 100).rounded()))%")
-                            .font(.footnote)
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.6)
-                    }
+                    MoonPhaseView(phase: illumination.phase, brightLimbAngle: illumination.angle,
+                                  parallacticAngle: parallacticAngle(now))
+                        .accessibilityElement()
+                        .accessibilityLabel("Moon: \(illumination.phaseName), \(Int((illumination.fraction * 100).rounded()))% lit")
                     DayDial(now: now, sun: sun, polarDay: polarDay(now))
                 }
                 .frame(maxHeight: .infinity)
@@ -44,9 +39,10 @@ struct ClockScreen: View {
     private func clockTile(_ title: String, _ value: String) -> some View {
         ReadoutTile(title: title) {
             SegmentText(text: value)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 2)
+                .padding(.vertical, 4)
         }
-        .frame(minHeight: 84, maxHeight: 130)
+        .frame(minHeight: 96, maxHeight: 150)
     }
 
     /// Turns the moon to match the sky here; north-up when there is no fix yet.
@@ -94,15 +90,17 @@ struct MoonPhaseView: View {
                 .resizable()
                 .interpolation(.high)
                 .scaledToFit()
+                .grayscale(1)
+                .contrast(1.1)
             // Night side: the disc minus the lit part, softened so the terminator isn't a hard edge.
-            // A little earthshine is left visible, as in a real photo.
+            // The dark side stays faintly visible, like earthshine.
             Canvas { context, size in
                 let r = min(size.width, size.height) / 2
                 let center = CGPoint(x: size.width / 2, y: size.height / 2)
                 var shadow = Path(ellipseIn: CGRect(x: center.x - r * 1.1, y: center.y - r * 1.1, width: r * 2.2, height: r * 2.2))
                 shadow.addPath(Self.litPath(phase: phase, center: center, radius: r, litOnRight: true))
                 context.addFilter(.blur(radius: r * 0.025))
-                context.fill(shadow, with: .color(.black.opacity(0.86)), style: FillStyle(eoFill: true))
+                context.fill(shadow, with: .color(.black.opacity(0.62)), style: FillStyle(eoFill: true))
             }
             // The lit side is drawn on the right (position angle 270°); turn it to face the bright limb.
             .rotationEffect(.radians(-(brightLimbAngle + .pi / 2)))
@@ -111,7 +109,6 @@ struct MoonPhaseView: View {
         // Celestial north sits `parallacticAngle` clockwise of the zenith direction.
         .rotationEffect(.radians(parallacticAngle))
         .aspectRatio(1, contentMode: .fit)
-        .shadow(color: .black.opacity(0.35), radius: 8)
         .accessibilityHidden(true)
     }
 
@@ -160,14 +157,19 @@ struct DayDial: View {
                 context.draw(Text(String(format: "%02d", hour)).font(.system(size: r * 0.15, weight: .bold)).foregroundColor(.white),
                              at: dialPoint(center, r * 0.8, 180 + Double(hour) * 15))
             }
-            var hand = Path()
+            // Tapered hand, wide at the hub with a rounded tip, as on the receiver's dial.
             let a = Self.angle(now)
-            hand.move(to: dialPoint(center, r * 0.62, a))
-            hand.addLine(to: dialPoint(center, r * 0.05, a + 90))
-            hand.addLine(to: dialPoint(center, r * 0.05, a - 90))
+            let tip = dialPoint(center, r * 0.66, a)
+            var hand = Path()
+            hand.move(to: dialPoint(center, r * 0.08, a - 90))
+            hand.addLine(to: CGPoint(x: tip.x + r * 0.022 * CGFloat(cos((a - 180) * .pi / 180)),
+                                     y: tip.y + r * 0.022 * CGFloat(sin((a - 180) * .pi / 180))))
+            hand.addArc(center: tip, radius: r * 0.022, startAngle: .degrees(a - 180), endAngle: .degrees(a), clockwise: false)
+            hand.addLine(to: dialPoint(center, r * 0.08, a + 90))
             hand.closeSubpath()
             context.fill(hand, with: .color(Palette.accent))
-            let hub = r * 0.1
+            context.stroke(hand, with: .color(Color(red: 0, green: 0.55, blue: 0.6)), lineWidth: 1)
+            let hub = r * 0.12
             context.fill(Path(ellipseIn: CGRect(x: center.x - hub, y: center.y - hub, width: hub * 2, height: hub * 2)),
                          with: .color(Palette.accent))
             let inner = hub * 0.5
