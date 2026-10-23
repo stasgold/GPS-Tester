@@ -154,7 +154,9 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         true
     }
 
+    #if DEBUG
     /// Feeds two minutes of made-up fixes, for screenshots and tests.
+    /// Debug builds only: never compiled into the App Store app.
     func loadSampleFixes(now: Date = Date()) {
         isRunning = true
         startedAt = now.addingTimeInterval(-63)
@@ -169,6 +171,8 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
             record(fix)
         }
     }
+
+    #endif
 
     // MARK: Bookkeeping
 

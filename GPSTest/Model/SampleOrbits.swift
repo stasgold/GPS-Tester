@@ -1,5 +1,7 @@
 import Foundation
 
+// Debug builds only (tests and CI screenshots): never compiled into the App Store app.
+#if DEBUG
 /// Made-up but realistic constellations, for screenshots and tests when no real orbits are at hand.
 enum SampleOrbits {
     static func elements(epoch: Date = Date()) -> [OrbitalElements] {
@@ -43,3 +45,4 @@ enum SampleOrbits {
         return result
     }
 }
+#endif

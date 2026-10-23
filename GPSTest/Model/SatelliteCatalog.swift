@@ -27,13 +27,15 @@ final class SatelliteCatalog {
         loadCache()
     }
 
-    /// For screenshots and tests.
+    #if DEBUG
+    /// For screenshots and tests. Debug builds only.
     init(elements: [OrbitalElements], downloadedAt: Date = Date()) {
         cacheURL = nil
         session = .shared
         self.elements = elements
         self.downloadedAt = downloadedAt
     }
+    #endif
 
     static var defaultCacheURL: URL? {
         try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)

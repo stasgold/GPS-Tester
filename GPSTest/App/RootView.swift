@@ -32,14 +32,20 @@ struct RootView: View {
     @AppStorage("page") private var storedPage = Page.dashboard.rawValue
     @State private var sheet: Sheet?
 
-    /// Overrides the remembered page (screenshots).
-    var initialPage: Page?
+    init() {}
 
-    init(initialPage: Page? = nil) {
+    #if DEBUG
+    /// Overrides the remembered page, for CI screenshots. Debug builds only.
+    private var initialPage: Page?
+
+    init(initialPage: Page?) {
         self.initialPage = initialPage
     }
 
     private var page: Page { initialPage ?? Page(rawValue: storedPage) ?? .dashboard }
+    #else
+    private var page: Page { Page(rawValue: storedPage) ?? .dashboard }
+    #endif
 
     var body: some View {
         VStack(spacing: 10) {
